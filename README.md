@@ -10,7 +10,7 @@ Grade a PDF of dozens of exam forms. Each student submits 2 pages. The first pag
 To achieve this, execute the following command:
 
 ```bash
-python .\AutoGrader_Alpha_v1_18.py --dpi 300 --all-pages --summary-csv csv grades.csv --write-graded-pdf --outdir output --jpeg-quality 85 --skip-n 1 --points-per-question 3 --key .\answer_keys.txt .\exam2.pdf .\omr_form_25q_v1.16.json
+python .\AutoGrader_Alpha_v1_18.py --dpi 300 --all-pages --summary-csv csv grades.csv --write-graded-pdf --outdir output --jpeg-quality 85 --skip-n 1 --points-per-question 3 --key .\answer_keys.txt .\exam.pdf .\omr_form_25q_v1.16.json
 ```
 
 This version introduces:
