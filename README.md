@@ -210,7 +210,3 @@ Use debug mode:
 ```
 --debug-dir debug
 ```
-
-## 📬 Need Help?
-I can refine and extend AutoGrader anytime.  
-Ask for: GUI front-end, JSON validator, batch graders, installer scripts, or new templates.
