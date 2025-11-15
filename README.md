@@ -1,8 +1,17 @@
-
 # AutoGrader Alpha v1.18 — README
 
 ## 📘 Overview
 AutoGrader Alpha v1.18 is a high-precision Optical Mark Recognition (OMR) engine designed to automatically grade multiple-choice exam sheets. It supports multi-form exams (A–F), email extraction, bubble analysis, alignment correction, and graded PDF generation.
+
+Example:
+
+Grade a PDF of dozens of exam forms. Each student submits 2 pages. The first page is the OMR Bubble Sheet form. The 2nd page is the essay to be skipped by the autograder.  Output desired is a csv file of all of the grades, as well as an individual PDF for each student's submission. Each output file is named with the student's score.
+
+To achieve this, execute the following command:
+
+```bash
+python .\AutoGrader_Alpha_v1_18.py --dpi 300 --all-pages --summary-csv csv grades.csv --write-graded-pdf --outdir 220exams2 --jpeg-quality 85 --skip-n 1 --points-per-question 3 --key .\answer_keys.txt .\220-Exam2b.pdf .\omr_form_25q_v1.16.json
+```
 
 This version introduces:
 - **Points per question**
