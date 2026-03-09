@@ -5,12 +5,12 @@ AutoGrader Alpha v1.20 is a high-precision Optical Mark Recognition (OMR) engine
 
 Example:
 
-Grade a PDF of dozens of exam forms. Each student submits 2 pages. The first page is the OMR Bubble Sheet form. The 2nd page is the essay to be skipped by the autograder. Sometimes there are additional extra pages in addition to the first essay page. The --auto-skip-unreadable feature addresses this.  Output desired is a csv file of all of the grades, as well as an individual PDF for each student's submission. Each output file is named with the student's score.
+Grade a PDF of dozens of exam forms. Each student submits 1 or more pages. The first page is the OMR Bubble Sheet form. The 2nd and subsequent pages are the essay to be skipped by the autograder, and appended to the PDF output as additional pages. The --auto-skip-unreadable feature addresses this.  Output desired is a csv file of all of the grades, as well as an individual PDF for each student's submission. Each output file is named with the student's score.
 
 To achieve this, execute the following command:
 
 ```bash
-python .\AutoGrader_Alpha_v1_18.py --dpi 300 --all-pages --summary-csv csv grades.csv --write-graded-pdf --outdir output --jpeg-quality 85 --auto-skip-undreadable --points-per-question 3 --key .\answer_keys.txt .\exam.pdf .\omr_form_25q_v1.16.json
+python .\AutoGrader_Alpha_v1_20.py --dpi 300 --all-pages --summary-csv csv grades.csv --write-graded-pdf --outdir output --jpeg-quality 85 --auto-skip-undreadable --points-per-question 3 --key .\answer_keys.txt .\exam.pdf .\omr_form_25q_v1.16.json
 ```
 
 This version introduces:
