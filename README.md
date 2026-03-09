@@ -1,29 +1,26 @@
-# AutoGrader Alpha v1.18 — README
+# AutoGrader Alpha v1.20 — README
 
 ## 📘 Overview
-AutoGrader Alpha v1.18 is a high-precision Optical Mark Recognition (OMR) engine designed to automatically grade multiple-choice exam sheets. It supports multi-form exams (A–F), email extraction, bubble analysis, alignment correction, and graded PDF generation.
+AutoGrader Alpha v1.20 is a high-precision Optical Mark Recognition (OMR) engine designed to automatically grade multiple-choice exam sheets. It supports multi-form exams (A–F), email extraction, bubble analysis, alignment correction, and graded PDF generation.
 
 Example:
 
-Grade a PDF of dozens of exam forms. Each student submits 2 pages. The first page is the OMR Bubble Sheet form. The 2nd page is the essay to be skipped by the autograder.  Output desired is a csv file of all of the grades, as well as an individual PDF for each student's submission. Each output file is named with the student's score.
+Grade a PDF of dozens of exam forms. Each student submits 2 pages. The first page is the OMR Bubble Sheet form. The 2nd page is the essay to be skipped by the autograder. Sometimes there are additional extra pages in addition to the first essay page. The --auto-skip-unreadable feature addresses this.  Output desired is a csv file of all of the grades, as well as an individual PDF for each student's submission. Each output file is named with the student's score.
 
 To achieve this, execute the following command:
 
 ```bash
-python .\AutoGrader_Alpha_v1_18.py --dpi 300 --all-pages --summary-csv csv grades.csv --write-graded-pdf --outdir output --jpeg-quality 85 --skip-n 1 --points-per-question 3 --key .\answer_keys.txt .\exam.pdf .\omr_form_25q_v1.16.json
+python .\AutoGrader_Alpha_v1_18.py --dpi 300 --all-pages --summary-csv csv grades.csv --write-graded-pdf --outdir output --jpeg-quality 85 --auto-skip-undreadable --points-per-question 3 --key .\answer_keys.txt .\exam.pdf .\omr_form_25q_v1.16.json
 ```
 
 This version introduces:
-- **Points per question**
-- **New filename format:**  
-  `###pts_{filename}_p###.pdf`
-- **Automatic MULTI prefix** when any question contains multiple selected answers.
+- **auto-skip-unreadable
 
 AutoGrader is ideal for large-scale classroom assessments, high-volume grading, and workflows where accuracy of bubble detection and deskewing is critical.
 
 ## ⭐ Key Features
 ### 🖨 High-accuracy OMR
-- Detects A/B/C/D bubbles with threshold-based scoring.
+- Detects A/B/C/D/E/F bubbles with threshold-based scoring.
 - Handles BLANK, MULTI, and ambiguous marks.
 
 ### 🧭 Automatic alignment
@@ -36,7 +33,7 @@ AutoGrader is ideal for large-scale classroom assessments, high-volume grading, 
 - Reads multi-form answer keys.
 
 ### 📧 Email extraction via OCR
-- Extracts student email from a specified ROI.
+- - Psyche - no it doesn't ... not yet.  Extracts student email from a specified ROI.
 - Uses only the email’s local part (before `@`) for filenames.
 
 ### 📝 Robust grading output
@@ -130,6 +127,7 @@ python autograder.py exam.pdf form25q.json --force-form C
 | `--jpeg-quality JPEG_QUALITY` | JPEG quality (1–100) for background images. |
 | `--grayscale` | Embed background in grayscale to reduce size. |
 | `--skip-n SKIP_N` | After grading one page, skip N pages. |
+| `--auto-skip-unreadable` | Skips all non-scannable pages
 | `--points-per-question N` | Number of points per correct answer. |
 | `--force-form X` | Force the exam form (A–F). |
 
