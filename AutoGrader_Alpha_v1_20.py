@@ -6,59 +6,18 @@ __version__ = "alpha1.20"
 """
 AutoGrader Alpha 1.20
 
-# ================================================================
-# AutoGrader Alpha
-#
-# Version: 1.20
-# Release Date: 2026-03-09
-#
-# Changes from v1.18
-# ------------------------------------------------
-# NEW FEATURE: Automatic Skip for Unreadable Pages
-#
-# Added an optional command line argument:
-#
-#     --auto-skip-unreadable
-#
-# When enabled, the grader will automatically skip pages that cannot
-# be processed due to image recognition or fiducial detection errors,
-# such as:
-#
-#     RuntimeError: not enough fiducial candidates
-#
-# This typically occurs when the script encounters a page that is not
-# an OMR form (e.g., extra instructions page, cover sheet, or blank page).
-#
-# Behavior:
-#
-# 1. If a page fails during grading, the script catches the exception
-#    and marks the page as "skipped".
-#
-# 2. The skipped page is rendered as a normal PDF page without grading.
-#
-# 3. The skipped page is appended to the *previous successfully graded
-#    exam page* in the output PDF so that the student packet remains intact.
-#
-# 4. Grading then continues with the next page in the input PDF.
-#
-# Additional Notes:
-#
-# • This feature works alongside the existing fixed skip logic:
-#
-#       --skip-n N
-#
-#   which skips pages in a regular pattern (e.g., every other page).
-#
-# • The new auto-skip logic is intended to handle unexpected pages
-#   dynamically without stopping the grading process.
-#
-# • If skipped pages appear before the first graded page, they are
-#   temporarily queued and attached to the first successfully graded
-#   output file.
-#
-# • All other features and behavior from v1.18 remain unchanged.
-#
-# ================================================================
+Based on Alpha 1.15 (multi-form A–F detection + per-form keys, fiducial-based
+deskew + homography to design space, graded overlay PDFs, summary CSV).
+
+New in 1.16:
+- Extract student's EMAIL from a design-space ROI and name outputs using ONLY
+  the local part (before '@'), e.g., "jmg123". Falls back to "unknown_email".
+- Detect BLANK and MULTI answers:
+    * BLANK (no mark at/above threshold) -> incorrect
+    * MULTI (multiple marks at/above threshold OR winner too close to runner) ->
+      flagged as needing manual review (also counted incorrect)
+- Summary CSV now includes: email, blank_count, multi_count, needs_manual, and
+  filename_out; still includes per-question choice & correctness columns.
 
 Dependencies:
     pip install opencv-python numpy pymupdf Pillow PyPDF2
@@ -71,6 +30,8 @@ import os
 import re
 import sys
 import math
+import glob
+import tempfile
 from dataclasses import dataclass
 from typing import List, Tuple, Dict, Optional
 
@@ -78,7 +39,7 @@ import numpy as np
 import cv2
 
 from PIL import Image
-from PyPDF2 import PdfReader, PdfWriter
+from PyPDF2 import PdfReader, PdfWriter, PdfMerger
 
 # ----------------------------- PDF RENDER -------------------------------------
 
@@ -711,7 +672,8 @@ def process_one_page(pdf_path, dpi, page_index,
                      jpeg_quality, grayscale,
                      form_bubbles=None,
                      email_roi=None,
-                     forced_form_letter: Optional[str]=None, points_per_question=1.0):
+                     forced_form_letter: Optional[str]=None, points_per_question=1.0,
+                     output_base_label: Optional[str]=None):
     """
     Returns (out_pdf_path_or_empty, correct, total_keyed, chosen_map, form_letter, email_local, blank_count, multi_count, needs_manual)
     """
@@ -735,7 +697,6 @@ def process_one_page(pdf_path, dpi, page_index,
     H_img2design, status = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 2.5)
     if H_img2design is None:
         raise RuntimeError("Homography failed on page {}".format(page_index))
-
     # Warp to design rectangle
     warped_gray = cv2.warpPerspective(gray, H_img2design, (design_w, design_h), flags=cv2.INTER_LINEAR)
     warped_bgr  = cv2.warpPerspective(bgr,  H_img2design, (design_w, design_h), flags=cv2.INTER_LINEAR)
@@ -831,7 +792,7 @@ def process_one_page(pdf_path, dpi, page_index,
     percent = (100.0 * correct / total_keyed) if total_keyed else 0.0
 
     # Build output filename (with form and email local part)
-    base = os.path.splitext(os.path.basename(pdf_path))[0]
+    base = output_base_label or os.path.splitext(os.path.basename(pdf_path))[0]
     outdir_eff = outdir or os.path.dirname(os.path.abspath(pdf_path))
     os.makedirs(outdir_eff, exist_ok=True)
     out_pdf = ""
@@ -877,6 +838,46 @@ def process_one_page(pdf_path, dpi, page_index,
 
     return out_pdf, correct, total_keyed, chosen_map, form_letter, email_loc, blank_count, multi_count, needs_manual
 
+# ----------------------------- INPUT HELPERS ----------------------------------
+
+def resolve_input_pdf(input_path: str, outdir_hint: str = "") -> Tuple[str, Optional[str], str]:
+    """
+    Accept either a single PDF path or a directory containing PDFs.
+
+    Returns:
+        (pdf_to_grade, temp_pdf_to_cleanup_or_None, output_base_label)
+    """
+    if os.path.isfile(input_path):
+        if input_path.lower().endswith('.pdf'):
+            return input_path, None, os.path.splitext(os.path.basename(input_path))[0]
+        raise RuntimeError(f"Input file is not a PDF: {input_path}")
+
+    if not os.path.isdir(input_path):
+        raise RuntimeError(f"Input path does not exist: {input_path}")
+
+    pdf_files = sorted(glob.glob(os.path.join(input_path, '*.pdf')))
+    if not pdf_files:
+        raise RuntimeError(f"No PDF files found in directory: {input_path}")
+
+    merge_dir = outdir_hint or input_path
+    os.makedirs(merge_dir, exist_ok=True)
+    tmpf = tempfile.NamedTemporaryFile(prefix='autograder_alpha_v1_20_merged_', suffix='.pdf', delete=False, dir=merge_dir)
+    tmpf.close()
+
+    merger = PdfMerger()
+    try:
+        for pdf in pdf_files:
+            merger.append(pdf)
+        with open(tmpf.name, 'wb') as f:
+            merger.write(f)
+    finally:
+        merger.close()
+
+    label = os.path.basename(os.path.normpath(input_path)) or 'merged_input'
+    print(f"[input] merged {len(pdf_files)} PDF file(s) from directory: {input_path}")
+    print(f"[input] temporary merged PDF: {tmpf.name}")
+    return tmpf.name, tmpf.name, label
+
 # --------------------------------- MAIN ---------------------------------------
 
 def main():
@@ -909,6 +910,11 @@ def main():
                     help="Optional: force the form letter (A–F), bypassing detection.")
     args = ap.parse_args()
 
+    original_input_path = args.pdf
+    merge_outdir_hint = args.outdir or (original_input_path if os.path.isdir(original_input_path) else os.path.dirname(os.path.abspath(original_input_path)))
+    resolved_pdf_path, temp_merged_pdf, output_base_label = resolve_input_pdf(original_input_path, merge_outdir_hint)
+    args.pdf = resolved_pdf_path
+
     spec, rows, (design_w, design_h), fiducials, col_defs, form_bubbles, form_choices, email_roi = load_spec(args.spec)
 
     # parse multi-form key file
@@ -920,7 +926,7 @@ def main():
     total_pages = get_pdf_page_count(args.pdf)
     pages = list(range(total_pages)) if args.all_pages else [_normalize_page_index(args.page, total_pages)]
 
-    outdir_eff = args.outdir or os.path.dirname(os.path.abspath(args.pdf))
+    outdir_eff = args.outdir or (original_input_path if os.path.isdir(original_input_path) else os.path.dirname(os.path.abspath(args.pdf)))
     os.makedirs(outdir_eff, exist_ok=True)
 
     # summary
@@ -955,7 +961,8 @@ def main():
                 args.grayscale,
                 form_bubbles=form_bubbles,
                 email_roi=email_roi,
-                forced_form_letter=(args.force_form or None), points_per_question=args.points_per_question)
+                forced_form_letter=(args.force_form or None), points_per_question=args.points_per_question,
+                output_base_label=output_base_label)
         except Exception as e:
             if not auto_skip_unreadable:
                 raise
