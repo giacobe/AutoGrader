@@ -10,12 +10,13 @@ Grade a PDF of dozens of exam forms. Each student submits 1 or more pages. The f
 To achieve this, execute the following command:
 
 ```bash
-python .\AutoGrader_Alpha_v1_20.py --dpi 300 --all-pages --summary-csv csv grades.csv --write-graded-pdf --outdir output --jpeg-quality 85 --auto-skip-undreadable --points-per-question 3 --key .\answer_keys.txt .\exam.pdf .\omr_form_25q_v1.16.json
+python .\AutoGrader_Alpha_v1_20.py --dpi 300 --all-pages --summary-csv csv grades.csv --write-graded-pdf --outdir output --jpeg-quality 85 --auto-skip-undreadable --points-per-question 3 --key .\answer_keys.txt .\scans .\omr_form_25q_v1.16.json
 ```
 
 This version introduces:
 - **auto-skip-unreadable
-
+- ** auto-merging of all PDFs if a directory is given instead of a PDF as input
+  
 AutoGrader is ideal for large-scale classroom assessments, high-volume grading, and workflows where accuracy of bubble detection and deskewing is critical.
 
 ## ⭐ Key Features
@@ -101,6 +102,13 @@ python autograder.py exam.pdf form25q.json --all-pages --key key.txt --summary-c
 ```bash
 python autograder.py exam.pdf form25q.json --all-pages --key key.txt --points-per-question 3
 ```
+
+### Process all PDFS in the ./scans directory and output the resultant individual PDF files for each submission into the output directory.
+```bash
+python .\AutoGrader.py --all-pages --key .\key.txt --write-graded-pdf --outdir output --auto-skip-unreadable --points-per-question 3 .\scans\ .\omr_form_25q_v1.9.json
+```
+
+###
 
 ### Force form C
 ```bash
