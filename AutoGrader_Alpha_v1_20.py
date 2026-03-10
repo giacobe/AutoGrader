@@ -6,18 +6,64 @@ __version__ = "alpha1.20"
 """
 AutoGrader Alpha 1.20
 
-Based on Alpha 1.15 (multi-form A–F detection + per-form keys, fiducial-based
-deskew + homography to design space, graded overlay PDFs, summary CSV).
-
-New in 1.16:
-- Extract student's EMAIL from a design-space ROI and name outputs using ONLY
-  the local part (before '@'), e.g., "jmg123". Falls back to "unknown_email".
-- Detect BLANK and MULTI answers:
-    * BLANK (no mark at/above threshold) -> incorrect
-    * MULTI (multiple marks at/above threshold OR winner too close to runner) ->
-      flagged as needing manual review (also counted incorrect)
-- Summary CSV now includes: email, blank_count, multi_count, needs_manual, and
-  filename_out; still includes per-question choice & correctness columns.
+# ================================================================
+# AutoGrader Alpha
+#
+# Version: 1.20
+# Release Date: 2026-03-09
+#
+# Changes from v1.18
+# ------------------------------------------------
+# NEW FEATURE 1: Process all PDFs in the directory given
+#
+# When given a directory instead of a single PDF, the script will merge all PDFs
+# into a single one, then process all pages in it.
+#
+# NEW FEATURE 2: Automatic Skip for Unreadable Pages
+#
+# Added an optional command line argument:
+#
+#     --auto-skip-unreadable
+#
+# When enabled, the grader will automatically skip pages that cannot
+# be processed due to image recognition or fiducial detection errors,
+# such as:
+#
+#     RuntimeError: not enough fiducial candidates
+#
+# This typically occurs when the script encounters a page that is not
+# an OMR form (e.g., extra instructions page, cover sheet, or blank page).
+#
+# Behavior:
+#
+# 1. If a page fails during grading, the script catches the exception
+#    and marks the page as "skipped".
+#
+# 2. The skipped page is rendered as a normal PDF page without grading.
+#
+# 3. The skipped page is appended to the *previous successfully graded
+#    exam page* in the output PDF so that the student packet remains intact.
+#
+# 4. Grading then continues with the next page in the input PDF.
+#
+# Additional Notes:
+#
+# • This feature works alongside the existing fixed skip logic:
+#
+#       --skip-n N
+#
+#   which skips pages in a regular pattern (e.g., every other page).
+#
+# • The new auto-skip logic is intended to handle unexpected pages
+#   dynamically without stopping the grading process.
+#
+# • If skipped pages appear before the first graded page, they are
+#   temporarily queued and attached to the first successfully graded
+#   output file.
+#
+# • All other features and behavior from v1.18 remain unchanged.
+#
+# ================================================================
 
 Dependencies:
     pip install opencv-python numpy pymupdf Pillow PyPDF2
